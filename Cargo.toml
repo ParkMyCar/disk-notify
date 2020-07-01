@@ -1,0 +1,13 @@
+[package]
+name = "disk-notify"
+version = "0.1.0"
+authors = ["Parker Timmerman <parkertimmerman@dropbox.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+crossbeam-channel = "0.4"
+core-foundation = "0.9"
+disk-arbitration = { git = "https://github.com/ParkMyCar/disk-arbitration.git" }
+libc = "0.2"
