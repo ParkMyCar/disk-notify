@@ -14,13 +14,18 @@ use std::{
     sync::Once,
     thread,
 };
-use libc::c_void;
+use libc::{
+    c_char,
+    c_void,
+};
 
-static mut CHANNEL: MaybeUninit<(Sender<Option<CString>>, Receiver<Option<CString>>)> = MaybeUninit::uninit();
+use disk_notify::DiskInfo;
+
+static mut CHANNEL: MaybeUninit<(Sender<Option<DiskInfo>>, Receiver<Option<DiskInfo>>)> = MaybeUninit::uninit();
 static CHANNEL_INIT: Once = Once::new();
 
 #[inline]
-fn get_channel() -> &'static (Sender<Option<CString>>, Receiver<Option<CString>>) {
+fn get_channel() -> &'static (Sender<Option<DiskInfo>>, Receiver<Option<DiskInfo>>) {
     CHANNEL_INIT.call_once(|| unsafe {
         ptr::write(CHANNEL.as_mut_ptr(), channel::unbounded());
     });
@@ -31,20 +36,9 @@ fn get_channel() -> &'static (Sender<Option<CString>>, Receiver<Option<CString>>
 }
 
 extern "C" fn disk_appeared_callback(disk: da::disk::DADiskRef, _context: da::types::UnsafeMutableRawPointer) {
-    unsafe {
-        let name = da::disk::DADiskGetBSDName(disk);
-        let (tx, _rx) = get_channel();
-
-        if !name.is_null() {
-            // turn the pointer into a CStr
-            let cstr = std::ffi::CStr::from_ptr(name);
-            // Copy the data into an owned CString
-            let name_string: CString = cstr.into();
-            tx.send(Some(name_string)).unwrap();
-        } else {
-            tx.send(None).unwrap();
-        }
-    }
+    let (tx, _rx) = get_channel();
+    let info = DiskInfo::from_disk_ref(disk).ok();
+    tx.send(info).unwrap();
 }
 
 pub fn main() {
@@ -59,7 +53,7 @@ pub fn main() {
 
             da::arbitration::DARegisterDiskAppearedCallback(
                 session,
-                std::ptr::null(),
+                da::enums::kDADiskDescriptionMatchVolumeMountable,
                 Some(disk_appeared_callback),
                 std::ptr::null_mut(),
             );
@@ -80,7 +74,7 @@ pub fn main() {
 
     for maybe_string in rx.iter() {
         if let Some(data) = maybe_string {
-            println!("{:?}", data);
+            println!("{:#?}", data);
         }
     };
 

@@ -9,5 +9,5 @@ edition = "2018"
 [dependencies]
 crossbeam-channel = "0.4"
 core-foundation = "0.9"
-disk-arbitration = { git = "https://github.com/ParkMyCar/disk-arbitration.git" }
+disk-arbitration = { git = "https://github.com/ParkMyCar/disk-arbitration.git", rev = "29616532e9f622f1c8a998b7925fa4199c1e1a51" }
 libc = "0.2"
